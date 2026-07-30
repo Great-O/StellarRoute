@@ -82,17 +82,16 @@ impl LiquidityThinnessAlerts {
             .and_then(|s| s.parse().ok())
             .unwrap_or(DEFAULT_RETRY_DELAY_MS);
 
-        // Validate webhook URL if provided
-        let webhook_url = webhook_url.and_then(|url| {
-            if reqwest::Url::parse(&url).is_ok() {
-                Some(url)
+        let webhook_url = webhook_url.filter(|url| {
+            if reqwest::Url::parse(url).is_ok() {
+                true
             } else {
                 error!(
                     "{} is set but contains an invalid URL: {}; liquidity thinness alerts are disabled",
                     WEBHOOK_ENV,
-                    redact_url(&url)
+                    redact_url(url)
                 );
-                None
+                false
             }
         });
 
@@ -160,13 +159,7 @@ impl LiquidityThinnessAlerts {
         thresholds: HashMap<String, PairThinnessThreshold>,
         webhook_url: Option<String>,
     ) -> Self {
-        let webhook_url = webhook_url.and_then(|url| {
-            if reqwest::Url::parse(&url).is_ok() {
-                Some(url)
-            } else {
-                None
-            }
-        });
+        let webhook_url = webhook_url.filter(|url| reqwest::Url::parse(url).is_ok());
         Self {
             thresholds: thresholds
                 .into_iter()
